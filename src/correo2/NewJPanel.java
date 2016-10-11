@@ -13,6 +13,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import util.Utilsapp;
 import java.io.File;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
@@ -286,7 +287,7 @@ public class NewJPanel extends javax.swing.JPanel {
             
             
             lista.stream().filter((lista1) -> (lista1.getFechaFinAcuerdo() != null 
-                && lista1.getEstado().code() != ExcelReader.EstadoPet.EJECUCION.code())).forEach((lista1) -> {
+                && lista1.getEstado().code() == ExcelReader.EstadoPet.EJECUCION.code())).forEach((lista1) -> {
 
                     //peticiones a entregar hoy
                     if (hoy.equals(lista1.getFechaFinAcuerdo())) {
@@ -428,8 +429,12 @@ public class NewJPanel extends javax.swing.JPanel {
                 correo += (j > 0 ? "." : "") + tmp;
             }
             correo += "@everis.com";
-            System.out.println("Enviando mail");
-            mail.setTo(correo);
+            
+            String normalized = Normalizer.normalize(correo, Normalizer.Form.NFD);
+            String accentRemoved = normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+            System.out.println("Enviando mail a: " + accentRemoved);
+            
+            mail.setTo(accentRemoved);
             mail.setSubject(subject + Utilsapp.dateToStr(hoy, FMTFECHA) + " " + correo);
             mail.setHtmlMessage(htmlCode.toString());
             mail.send();
