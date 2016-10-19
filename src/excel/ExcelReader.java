@@ -11,7 +11,10 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -26,11 +29,22 @@ import util.Utilsapp;
  */
 public class ExcelReader {
     private final int ROWSTART = 13;
+    private final int ROWSTARTSTATUS = 3;
     private final String FMTDATE = "MM/dd/yy";
     private final String FMTDATE2 = "dd/MM/yy";
+    private final List<DesvioData> listadoDesvios;
+    private final HashMap<String,DesvioData> estadoPeticiones;
 
     public ExcelReader() {
-        listadoDesvios = new ArrayList();
+        listadoDesvios = new ArrayList<>();
+        estadoPeticiones = new HashMap<>();
+    }
+
+    /**
+     * @return the estadoPeticiones
+     */
+    public HashMap<String,DesvioData> getEstadoPeticiones() {
+        return estadoPeticiones;
     }
 
     /**
@@ -39,6 +53,7 @@ public class ExcelReader {
     public List<DesvioData> getListadoDesvios() {
         return listadoDesvios;
     }
+    
 
     public enum Error {
         NONE, XLSNOTFOUND, OTHER;
@@ -79,19 +94,23 @@ public class ExcelReader {
     public class DesvioData {
 
         private int peticion;
+        private int ot;
         private TipoPet tipo;
         private String nombrePet;
         private String actor;
         private Date fechaFinAcuerdo;
         private EstadoPet estado;
+        private String StrPetStatus;
 
         public DesvioData() {
             peticion = 0;
+            ot = 0;
             tipo = TipoPet.OTHER;
             nombrePet = "";
             actor = "";
             fechaFinAcuerdo = null;
             estado = EstadoPet.OTHER;
+            StrPetStatus = "";
         }
         
         /**
@@ -177,9 +196,37 @@ public class ExcelReader {
         public void setEstado(EstadoPet estado) {
             this.estado = estado;
         }
+
+        /**
+         * @return the StrPetStatus
+         */
+        public String getStrPetStatus() {
+            return StrPetStatus;
+        }
+
+        /**
+         * @param StrPetStatus the StrPetStatus to set
+         */
+        public void setStrPetStatus(String StrPetStatus) {
+            this.StrPetStatus = StrPetStatus;
+        }
+
+        /**
+         * @return the ot
+         */
+        public int getOt() {
+            return ot;
+        }
+
+        /**
+         * @param ot the ot to set
+         */
+        public void setOt(int ot) {
+            this.ot = ot;
+        }
     }
 
-    private List<DesvioData> listadoDesvios;
+    
 
     public Error readExcel(String path) {
         try {
@@ -200,7 +247,7 @@ public class ExcelReader {
                         CellReference cellRef = new CellReference(row.getRowNum(), cell.getColumnIndex());
                         refs = cellRef.getCellRefParts();
                         if (refs.length >= 3) {
-                            if ("AA".equals(refs[2])) {
+                            if ("AD".equals(refs[2])) {
                                 desvio.setActor(formatter.formatCellValue(cell));
                             } else if ("V".equals(refs[2])) {
                                 dato = formatter.formatCellValue(cell);
@@ -222,7 +269,15 @@ public class ExcelReader {
                                     } catch (NumberFormatException e) {
                                         desvio.setPeticion(0);
                                     }
-
+                                }
+                            } else if ("G".equals(refs[2])) {
+                                dato = formatter.formatCellValue(cell);
+                                if (dato != null && !dato.isEmpty()) {
+                                    try {
+                                        desvio.setOt(Integer.parseInt(dato));
+                                    } catch (NumberFormatException e) {
+                                        desvio.setOt(0);
+                                    }
                                 }
                             } else if ("I".equals(refs[2])) {
                                 desvio.nombrePet = formatter.formatCellValue(cell);
@@ -263,6 +318,63 @@ public class ExcelReader {
         }
         return Error.NONE;
     }
+    
+    
+    /**
+     * 
+     * @param path
+     * @return 
+     */
+    public Error readActualPetStatus(String path) {
+        try {
+            InputStream inp = new FileInputStream(path);
+            HSSFWorkbook wb = new HSSFWorkbook(inp);
+            DataFormatter formatter = new DataFormatter();
+            HSSFSheet sheet1 = wb.getSheetAt(0);
+
+            String refs[];
+            estadoPeticiones.clear();
+            String dato;
+            int rowCount = 1;
+
+            for (Row row : sheet1) {
+                if (rowCount >= ROWSTARTSTATUS) {
+                    DesvioData desvio = new DesvioData();
+                    for (Cell cell : row) {
+                        CellReference cellRef = new CellReference(row.getRowNum(), cell.getColumnIndex());
+                        refs = cellRef.getCellRefParts();
+                        if (refs.length >= 3) {
+                            if ("A".equals(refs[2])) {
+                                dato = formatter.formatCellValue(cell);
+                                if (dato != null && !dato.isEmpty()) {
+
+                                    try {
+                                        desvio.setPeticion(Integer.parseInt(dato));
+                                    } catch (NumberFormatException e) {
+                                        desvio.setPeticion(0);
+                                    }
+                                }
+                            } else if ("C".equals(refs[2])) {
+                                desvio.nombrePet = formatter.formatCellValue(cell);
+                            } else if ("E".equals(refs[2])) {
+                                desvio.StrPetStatus = formatter.formatCellValue(cell);
+                            }
+                        }
+                    }
+                    estadoPeticiones.put(String.valueOf(desvio.getPeticion()), desvio);
+                }
+                rowCount++;
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            return Error.XLSNOTFOUND;
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return Error.OTHER;
+        }
+        return Error.NONE;
+    }
+    
     
     
 }

@@ -23,7 +23,7 @@ public class Correo2 {
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // frame settings like size, close operation etc.
-        NewJPanel panel = new NewJPanel();
+        MainPanel panel = new MainPanel();
         // init textfields and buttons
         // add listeners or whatever
         // layout settings goes here

@@ -29,6 +29,7 @@ public class SendMail {
     
     private String from;
     private String to;
+    private String cc;
     private String server;
     private String htmlMessage;
     private String subject;
@@ -83,11 +84,10 @@ public class SendMail {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(getFrom()));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getTo()));
+            message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(getCc()));
             message.setSubject(getSubject());
-            //message.setText(getHtmlMessage());
             message.setContent(getHtmlMessage(), "text/html; charset=utf-8");
             Transport.send(message);
-            
             System.out.println("Done");
             
         //} catch (GeneralSecurityException | MessagingException e) {
@@ -112,11 +112,12 @@ public class SendMail {
             password = prop.getProperty("password");
             smptPort = prop.getProperty("smptPort");
             from = prop.getProperty("from");
+            setCc(prop.getProperty("cc"));
             
-            System.out.println(server);
-            System.out.println(username);
-            System.out.println(password);
-            System.out.println(smptPort);
+            System.out.println("server: " + server);
+            System.out.println("username: " + username);
+            System.out.println("smptPort: " + smptPort);
+            System.out.println("cc: " + getCc());
 
 	} catch (IOException ex) {
             ex.printStackTrace();
@@ -232,6 +233,20 @@ public class SendMail {
      */
     public void setSubject(String subject) {
         this.subject = subject;
+    }
+
+    /**
+     * @return the cc
+     */
+    public String getCc() {
+        return cc;
+    }
+
+    /**
+     * @param cc the cc to set
+     */
+    public void setCc(String cc) {
+        this.cc = cc;
     }
     
 }
